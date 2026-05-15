@@ -1,40 +1,86 @@
-package com.tigernum.app.viewmodel
+package com.tigernum.app.ui.screens
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.tigernum.app.data.repository.TigerRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.tigernum.app.R
+import com.tigernum.app.viewmodel.RegisterViewModel
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-data class RegisterUiState(
-    val isLoading: Boolean = false,
-    val errorMessage: String? = null,
-    val registrationSuccess: Boolean = false
-)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RegisterScreen(navController: NavHostController, viewModel: RegisterViewModel = hiltViewModel()) {
+    val uiState by viewModel.uiState.collectAsState()
+    val scope = rememberCoroutineScope()
 
-@HiltViewModel
-class RegisterViewModel @Inject constructor(
-    private val repository: TigerRepository
-) : ViewModel() {
+    var name by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
 
-    private val _uiState = MutableStateFlow(RegisterUiState())
-    val uiState: StateFlow<RegisterUiState> = _uiState
-
-    fun register(name: String, email: String, phone: String) {
-        if (name.isBlank() || email.isBlank() || phone.isBlank()) {
-            _uiState.value = _uiState.value.copy(errorMessage = "جميع الحقول مطلوبة")
-            return
+    LaunchedEffect(uiState.registrationSuccess) {
+        if (uiState.registrationSuccess) {
+            navController.navigate(Screen.Home.route) {
+                popUpTo(Screen.Register.route) { inclusive = true }
+            }
         }
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            val result = repository.register(name, email, phone)
-            result.onSuccess {
-                _uiState.value = _uiState.value.copy(isLoading = false, registrationSuccess = true)
-            }.onFailure {
-                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = it.message ?: "فشل التسجيل")
+    }
+
+    Scaffold { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(48.dp))
+            Text(stringResource(R.string.register_title), style = MaterialTheme.typography.headlineMedium)
+            Spacer(modifier = Modifier.height(32.dp))
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(stringResource(R.string.name_label)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text(stringResource(R.string.email_label)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = phone,
+                onValueChange = { phone = it },
+                label = { Text(stringResource(R.string.phone_label)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            if (uiState.errorMessage != null) {
+                Text(uiState.errorMessage!!, color = MaterialTheme.colorScheme.error)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            Button(
+                onClick = { viewModel.register(name, email, phone) },
+                enabled = !uiState.isLoading,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.register_button))
+            }
+            if (uiState.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.padding(16.dp))
             }
         }
     }
