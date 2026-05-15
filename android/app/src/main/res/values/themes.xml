@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- السمة الأساسية -->
+    <style name="Theme.TigerNumApp" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/primary</item>
+        <item name="android:navigationBarColor">@color/surface</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <!-- شاشة البداية (Splash) -->
+    <style name="Theme.TigerNumApp.Splash" parent="Theme.TigerNumApp">
+        <item name="android:windowBackground">@color/splash_background</item>
+    </style>
+</resources>
