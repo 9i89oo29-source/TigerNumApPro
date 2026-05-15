@@ -1,103 +1,150 @@
-package com.tigernum.app.viewmodel
+package com.tigernum.app.ui.screens
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.tigernum.app.data.local.entity.CountryEntity
-import com.tigernum.app.data.local.entity.ServiceEntity
-import com.tigernum.app.data.repository.TigerRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import javax.inject.Inject
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
+import com.tigernum.app.R
+import com.tigernum.app.viewmodel.HomeViewModel
 
-data class HomeUiState(
-    val factories: List<String> = listOf("المصنع الرئيسي", "المصنع الاحتياطي"),
-    val selectedFactory: String = "المصنع الرئيسي",
-    val countries: List<CountryEntity> = emptyList(),
-    val selectedCountry: CountryEntity? = null,
-    val services: List<ServiceEntity> = emptyList(),
-    val selectedService: String = "",
-    val balance: Double = 0.0,
-    val currency: String = "USD",
-    val isLoading: Boolean = false,
-    val errorMessage: String? = null,
-    val buySuccess: Pair<String, String>? = null // orderId, number
-)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreen(navController: NavHostController, viewModel: HomeViewModel = hiltViewModel()) {
+    val uiState by viewModel.uiState.collectAsState()
 
-@HiltViewModel
-class HomeViewModel @Inject constructor(
-    private val repository: TigerRepository
-) : ViewModel() {
-
-    private val _uiState = MutableStateFlow(HomeUiState())
-    val uiState: StateFlow<HomeUiState> = _uiState
-
-    init {
-        viewModelScope.launch {
-            _uiState.update { it.copy(balance = repository.getBalance(), currency = repository.getCurrency()) }
+    // التنقل إلى شاشة الرقم عند نجاح الشراء
+    LaunchedEffect(uiState.buySuccess) {
+        uiState.buySuccess?.let { (orderId, number) ->
+            navController.navigate("buy_number/$orderId/$number")
+            viewModel.resetBuySuccess()
         }
-        // تحميل الكاش أو جلب جديد
-        loadCountries()
-        loadServices()
     }
 
-    private fun loadCountries() {
-        viewModelScope.launch {
-            repository.fetchAndCacheCountries().onFailure { /* استخدم الكاش */ }
-            repository.getCachedCountries().collect { countries ->
-                _uiState.update { it.copy(countries = countries) }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // عرض الرصيد
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(stringResource(R.string.balance_label), color = MaterialTheme.colorScheme.onPrimary)
+                Text(
+                    text = "${uiState.balance} ${uiState.currency}",
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = MaterialTheme.typography.headlineSmall
+                )
             }
         }
-    }
 
-    private fun loadServices() {
-        viewModelScope.launch {
-            repository.fetchAndCacheServices().onFailure { /* استخدم الكاش */ }
-            repository.getCachedServices().collect { services ->
-                _uiState.update { it.copy(services = services) }
-            }
-        }
-    }
-
-    fun onFactorySelected(factory: String) {
-        _uiState.update { it.copy(selectedFactory = factory) }
-    }
-
-    fun onCountrySelected(country: CountryEntity) {
-        _uiState.update { it.copy(selectedCountry = country) }
-    }
-
-    fun onServiceSelected(service: String) {
-        _uiState.update { it.copy(selectedService = service) }
-    }
-
-    fun buyNumber() {
-        val state = _uiState.value
-        val factoryCode = if (state.selectedFactory == "المصنع الرئيسي") "main" else "backup"
-        val country = state.selectedCountry ?: return
-        val service = state.selectedService
-        if (service.isBlank()) return
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            val result = repository.buyNumber(factoryCode, country.code, service)
-            result.onSuccess { response ->
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        buySuccess = Pair(response.orderId, response.number),
-                        balance = repository.getBalance()
+        // اختيار المصنع
+        var expandedFactory by remember { mutableStateOf(false) }
+        ExposedDropdownMenuBox(
+            expanded = expandedFactory,
+            onExpandedChange = { expandedFactory = !expandedFactory }
+        ) {
+            OutlinedTextField(
+                value = uiState.selectedFactory,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text(stringResource(R.string.factory_label)) },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedFactory) },
+                modifier = Modifier.fillMaxWidth().menuAnchor()
+            )
+            ExposedDropdownMenu(expanded = expandedFactory, onDismissRequest = { expandedFactory = false }) {
+                uiState.factories.forEach { factory ->
+                    DropdownMenuItem(
+                        text = { Text(factory) },
+                        onClick = {
+                            viewModel.onFactorySelected(factory)
+                            expandedFactory = false
+                        }
                     )
                 }
-            }.onFailure { e ->
-                _uiState.update {
-                    it.copy(isLoading = false, errorMessage = e.message ?: "حدث خطأ")
+            }
+        }
+
+        // اختيار الدولة
+        var expandedCountry by remember { mutableStateOf(false) }
+        ExposedDropdownMenuBox(
+            expanded = expandedCountry,
+            onExpandedChange = { expandedCountry = !expandedCountry }
+        ) {
+            OutlinedTextField(
+                value = uiState.selectedCountry?.let { "${it.flag} ${it.name} (${it.dialCode})" } ?: "",
+                onValueChange = {},
+                readOnly = true,
+                label = { Text(stringResource(R.string.country_label)) },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCountry) },
+                modifier = Modifier.fillMaxWidth().menuAnchor()
+            )
+            ExposedDropdownMenu(expanded = expandedCountry, onDismissRequest = { expandedCountry = false }) {
+                uiState.countries.forEach { country ->
+                    DropdownMenuItem(
+                        text = { Text("${country.flag} ${country.name} (${country.dialCode})") },
+                        onClick = {
+                            viewModel.onCountrySelected(country)
+                            expandedCountry = false
+                        }
+                    )
                 }
             }
         }
-    }
 
-    fun resetBuySuccess() {
-        _uiState.update { it.copy(buySuccess = null) }
+        // اختيار الخدمة
+        var expandedService by remember { mutableStateOf(false) }
+        ExposedDropdownMenuBox(
+            expanded = expandedService,
+            onExpandedChange = { expandedService = !expandedService }
+        ) {
+            OutlinedTextField(
+                value = uiState.selectedService,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text(stringResource(R.string.service_label)) },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedService) },
+                modifier = Modifier.fillMaxWidth().menuAnchor()
+            )
+            ExposedDropdownMenu(expanded = expandedService, onDismissRequest = { expandedService = false }) {
+                uiState.services.forEach { service ->
+                    DropdownMenuItem(
+                        text = { Text(service.name) },
+                        onClick = {
+                            viewModel.onServiceSelected(service.id)
+                            expandedService = false
+                        }
+                    )
+                }
+            }
+        }
+
+        // زر الشراء
+        Button(
+            onClick = { viewModel.buyNumber() },
+            enabled = !uiState.isLoading && uiState.selectedCountry != null && uiState.selectedService.isNotEmpty(),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(stringResource(R.string.buy_button))
+        }
+
+        if (uiState.isLoading) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+        }
+
+        uiState.errorMessage?.let {
+            Text(it, color = MaterialTheme.colorScheme.error)
+        }
     }
 }
