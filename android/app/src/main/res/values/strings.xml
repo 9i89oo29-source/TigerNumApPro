@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">صياد الأرقام العربية</string>
+    <string name="top_bar_title">صياد الأرقام</string>
+    <string name="top_bar_subtitle">أرقام افتراضية موثوقة</string>
+    <string name="nav_instructions">التعليمات</string>
+    <string name="nav_settings">الإعدادات</string>
+
+    <string name="register_title">تسجيل حساب جديد</string>
+    <string name="name_label">الاسم الكامل</string>
+    <string name="email_label">البريد الإلكتروني</string>
+    <string name="phone_label">رقم الهاتف</string>
+    <string name="register_button">تسجيل</string>
+    <string name="register_success">تم التسجيل بنجاح</string>
+
+    <string name="balance_label">رصيدك</string>
+    <string name="factory_label">اختر المصنع</string>
+    <string name="main_factory">المصنع الرئيسي</string>
+    <string name="backup_factory">المصنع الاحتياطي</string>
+    <string name="country_label">اختر الدولة</string>
+    <string name="service_label">اختر الخدمة</string>
+    <string name="buy_button">شراء رقم</string>
+    <string name="buy_number_title">رقمك الجديد</string>
+    <string name="copy_number">نسخ الرقم</string>
+    <string name="waiting_sms">في انتظار رمز التحقق…</string>
+    <string name="sms_received">تم استلام الرمز</string>
+    <string name="back_button">العودة</string>
+
+    <string name="error_network">خطأ في الشبكة. تأكد من اتصالك.</string>
+    <string name="error_balance">رصيدك غير كافٍ. يرجى الشحن.</string>
+    <string name="error_provider">المزود غير متاح حالياً. حاول لاحقاً.</string>
+    <string name="error_timeout">انتهت صلاحية الطلب. حاول مجدداً.</string>
+    <string name="error_general">حدث خطأ ما. حاول مجدداً.</string>
+    <string name="error_validation">يرجى ملء جميع الحقول.</string>
+
+    <string name="instructions_title">كيفية الاستخدام</string>
+    <string name="instructions_body">
+        1. اختر المصنع الرئيسي أو الاحتياطي.\n
+        2. اختر الدولة المطلوبة من القائمة.\n
+        3. اختر الخدمة (مثل واتساب، تلغرام).\n
+        4. اضغط على شراء رقم.\n
+        5. انتظر ظهور الرقم، ثم انسخه.\n
+        6. سيظهر رمز التحقق تلقائياً عند وصوله.\n
+        7. استخدم الرقم والرمز لإكمال التسجيل.
+    </string>
+
+    <string name="settings_title">الإعدادات</string>
+    <string name="profile_name">الاسم</string>
+    <string name="profile_email">البريد الإلكتروني</string>
+    <string name="profile_phone">رقم الهاتف</string>
+    <string name="logout_button">تسجيل الخروج</string>
+</resources>
