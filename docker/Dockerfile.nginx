@@ -1,0 +1,5 @@
+FROM nginx:alpine
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY admin/ /usr/share/nginx/html/admin
+COPY docs/ /usr/share/nginx/html/docs
+EXPOSE 80 443
