@@ -1,0 +1,15 @@
+body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: #f4f6f9;
+    direction: rtl;
+}
+.navbar-brand {
+    font-weight: bold;
+}
+.card {
+    border-radius: 10px;
+}
+.modal-header {
+    background-color: #8A1538;
+    color: white;
+}
