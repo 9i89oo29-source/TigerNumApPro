@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم صياد الأرقام</title>
+    <!-- Bootstrap 5 RTL -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <!-- شاشة تسجيل الدخول -->
+    <div id="login-section" class="d-flex justify-content-center align-items-center vh-100">
+        <div class="card shadow p-4" style="width: 400px;">
+            <h3 class="text-center mb-4">تسجيل دخول المشرف</h3>
+            <div class="mb-3">
+                <input type="text" id="username" class="form-control" placeholder="اسم المستخدم" autocomplete="username">
+            </div>
+            <div class="mb-3">
+                <input type="password" id="password" class="form-control" placeholder="كلمة المرور" autocomplete="current-password">
+            </div>
+            <div id="login-error" class="alert alert-danger d-none"></div>
+            <button class="btn btn-primary w-100" onclick="login()">دخول</button>
+        </div>
+    </div>
+
+    <!-- لوحة التحكم (مخفية بداية) -->
+    <div id="dashboard-section" style="display:none">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">صياد الأرقام - المشرف</a>
+                <button class="btn btn-outline-light" onclick="logout()">تسجيل خروج</button>
+            </div>
+        </nav>
+        <div class="container-fluid mt-3">
+            <ul class="nav nav-tabs" id="mainTab" role="tablist">
+                <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#dashboard">الرئيسية</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#users">المستخدمون</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#pricing">التسعير</a></li>
+            </ul>
+            <div class="tab-content mt-2">
+                <!-- تبويب الرئيسية -->
+                <div class="tab-pane fade show active" id="dashboard">
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <div class="card text-white bg-primary mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">إجمالي المستخدمين</h5>
+                                    <p class="card-text fs-3" id="total-users">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-white bg-success mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">الطلبات النشطة</h5>
+                                    <p class="card-text fs-3" id="active-orders">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-white bg-warning mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">إجمالي الإيرادات</h5>
+                                    <p class="card-text fs-3" id="total-revenue">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <canvas id="ordersChart" height="200"></canvas>
+                        </div>
+                        <div class="col-md-6">
+                            <canvas id="revenueChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- تبويب المستخدمين -->
+                <div class="tab-pane fade" id="users">
+                    <button class="btn btn-success mb-2" onclick="loadUsers()"><i class="fas fa-sync-alt"></i> تحديث</button>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead class="table-dark">
+                                <tr><th>UUID</th><th>الاسم</th><th>البريد</th><th>الهاتف</th><th>الرصيد</th><th>العملة</th><th>الحالة</th><th>شحن</th></tr>
+                            </thead>
+                            <tbody id="users-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- تبويب التسعير -->
+                <div class="tab-pane fade" id="pricing">
+                    <button class="btn btn-success mb-2" onclick="loadPricing()"><i class="fas fa-sync-alt"></i> تحديث</button>
+                    <button class="btn btn-info mb-2" onclick="showAddPricingModal()"><i class="fas fa-plus"></i> إضافة قاعدة</button>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead class="table-dark">
+                                <tr><th>المصنع</th><th>الدولة</th><th>الخدمة</th><th>سعر التجزئة</th><th>التكلفة</th><th>العملة</th><th>تعديل</th><th>حذف</th></tr>
+                            </thead>
+                            <tbody id="pricing-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال إضافة/تعديل قاعدة تسعير -->
+    <div class="modal fade" id="pricingModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="pricingModalLabel">إضافة قاعدة تسعير</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="pricing-id">
+                    <div class="mb-3">
+                        <select id="factory" class="form-select">
+                            <option value="main">المصنع الرئيسي</option>
+                            <option value="backup">المصنع الاحتياطي</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <input type="text" id="country" class="form-control" placeholder="رمز الدولة (مثال sa)">
+                    </div>
+                    <div class="mb-3">
+                        <input type="text" id="service" class="form-control" placeholder="الخدمة (مثال whatsapp)">
+                    </div>
+                    <div class="mb-3">
+                        <input type="number" id="retailPrice" class="form-control" placeholder="سعر التجزئة">
+                    </div>
+                    <div class="mb-3">
+                        <input type="number" id="baseCost" class="form-control" placeholder="التكلفة">
+                    </div>
+                    <div class="mb-3">
+                        <input type="text" id="currency" class="form-control" value="USD" placeholder="العملة">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-primary" onclick="savePricing()">حفظ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
