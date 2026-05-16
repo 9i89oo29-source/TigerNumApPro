@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: tigernum-mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - tigernum-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: tigernum-redis
+    restart: always
+    networks:
+      - tigernum-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: tigernum-backend
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      MONGODB_URI: mongodb://root:example@mongodb:27017/tigernum?authSource=admin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      HERO_API_KEY: ${HERO_API_KEY}
+      TIGER_API_KEY: ${TIGER_API_KEY}
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - tigernum-network
+
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.nginx
+    container_name: tigernum-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+    networks:
+      - tigernum-network
+
+volumes:
+  mongo-data:
+
+networks:
+  tigernum-network:
+    driver: bridge
